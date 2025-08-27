@@ -59,7 +59,7 @@ jobs:
       - name: Download Java JAR
         uses: actions/download-artifact@v4
         with:
-          name: java-app-jar
+          name: java-app-jar-8
           path: build/libs
 
       - name: Login to Docker Hub
