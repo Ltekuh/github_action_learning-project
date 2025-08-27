@@ -45,7 +45,7 @@ jobs:
       - name: Archive JAR
         uses: actions/upload-artifact@v4
         with:
-          name: java-app-jar
+          name: java-app-jar-${{ matrix.java-version }}
           path: build/libs/*.jar
 
   docker:
