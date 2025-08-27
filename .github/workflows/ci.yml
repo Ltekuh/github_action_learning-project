@@ -13,33 +13,12 @@ on:
     branches: [ main ]
 
 jobs:
-  docker-login:
-    name: Login to Docker Hub
-    runs-on: ubuntu-latest
-    steps:
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          registry: docker.io
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-  docker-build:
-    needs: docker-login
+  build:
+    name: Build & Test Java
     runs-on: ubuntu-latest
     strategy:
       matrix:
         java-version: [8, 11]
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-  docker-push:
-    needs: docker-build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        java-version: [8]
     steps:
       - uses: actions/checkout@v4
 
@@ -48,10 +27,55 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java-version }}
-      - name: Build and push
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build --warning-mode all
+
+      - name: Archive JAR
+        uses: actions/upload-artifact@v3
+        with:
+          name: java-app-jar
+          path: build/libs/*.jar
+
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      # Download the JAR built in the previous job
+      - name: Download Java JAR
+        uses: actions/download-artifact@v3
+        with:
+          name: java-app-jar
+          path: build/libs
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: Dockerfile
           push: true
           tags: ltekuh/apps:latest
 
