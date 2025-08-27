@@ -1,7 +1,7 @@
 # ThisWORKFLOW will build a Java project with Gradle
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
 
-name: Java CI with Gradle
+name: Java CI with Gradle (Cross-Platform)
 
 permissions:
   contents: read
@@ -14,10 +14,11 @@ on:
 
 jobs:
   build:
-    name: Build & Test Java
-    runs-on: ubuntu-latest
+    name: Build & Test Java on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         java-version: [8, 11]
     steps:
       - uses: actions/checkout@v4
